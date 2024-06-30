@@ -225,9 +225,11 @@ function constraint_gen_ramping_uc(pm::AbstractPowerModel, n::Int, i::Int)
         rg_c = var(pm, n, :rg, i)
         pg_ram_up = 2 * nws(pm)[n][:gen][i]["ramp_30"]
         pg_ram_down = 2 * nws(pm)[n][:gen][i]["ramp_30"]
-
-        JuMP.@constraint(pm.model, pg_c + rg_c - pg_p <= pg_ram_up)
-        JuMP.@constraint(pm.model, pg_p - pg_c <= pg_ram_down)
+        
+        if !isinf(pg_ram_down) && isreal(pg_ram_down) && pg_ram_down > 0
+            JuMP.@constraint(pm.model, pg_c + rg_c - pg_p <= pg_ram_up)
+            JuMP.@constraint(pm.model, pg_p - pg_c <= pg_ram_down)
+        end
     end
 end
 

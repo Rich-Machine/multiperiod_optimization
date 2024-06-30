@@ -54,5 +54,9 @@ result = solve_mp_opf_ramp(data_mp, DCPPowerModel, opt; multinetwork=true)
 data["branch"]["1"]["rate_a"] = 0 
 data["branch"]["2"]["rate_a"] = 0 
 data["branch"]["3"]["rate_a"] = 0 
+
+data["gen"]["1"]["pmax"] = 1 
+data["gen"]["2"]["pmax"] = 1 
+
 result = solve_opf_violation(data, DCPPowerModel ,opt)
 # pm = PowerModels.instantiate_model(data, DCPPowerModel,build_opf_violation)
