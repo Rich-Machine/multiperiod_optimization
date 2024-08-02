@@ -53,9 +53,13 @@ end
 #################### ramping constraints ####################
 
 function constraint_gen_ramping(pm::AbstractPowerModel, n::Int, i::Int)
-    if haskey(nws(pm)[n][:gen][i], "ramp_30")
+    if haskey(nws(pm)[n][:gen][i], "ramp_30") && nws(pm)[n][:gen][i]["gen_status"]==true
+        if haskey(nws(pm)[n-Int64(1)][:gen], i)
+            pg_p = var(pm, n-Int64(1), :pg, i)
+        else
+            pg_p = 0.0
+        end
         pg_c = var(pm, n, :pg, i)
-        pg_p = var(pm, n-Int64(1), :pg, i)
         pg_ram_up = 2 * nws(pm)[n][:gen][i]["ramp_30"]
         pg_ram_down = 2 * nws(pm)[n][:gen][i]["ramp_30"]
 

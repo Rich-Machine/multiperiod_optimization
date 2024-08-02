@@ -132,6 +132,12 @@ end
 ########################################
 ## solve unit commitment problem (this code doesn't work yet, we need to fix it)
 ########################################
+## DATE: Must be stored in these 3 variables
+hour = 0 ## hour: 0-23
+month = 1 ## month: 1-12
+time_horizon = 24 ## Horizon is it will run 24 hours from the hour you pick
+day = 1
+data = read_GA_data(file_path, month, day, hour, time_horizon)
 reserve_requirment = 0
 for nw in keys(data["nw"])
     data["nw"][nw]["option"] = Dict("reserve_requirment" => reserve_requirment, "energy_not_served_cost" => energy_not_served_cost)

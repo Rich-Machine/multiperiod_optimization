@@ -113,8 +113,8 @@ function variable_gen_reserve_uc(pm::AbstractPowerModel; nw::Int=nw_id_default, 
     )
 
     for (i, gen) in ref(pm, nw, :gen)
-        JuMP.set_lower_bound(rg[i], 0)
-        JuMP.set_upper_bound(rg[i], gen["pmax"])
+        JuMP.set_lower_bound(rg[i], 0.0)
+        # JuMP.set_upper_bound(rg[i], gen["pmax"])
     end
 
     report && sol_component_value(pm, nw, :gen, :rg, ids(pm, nw, :gen), rg)
