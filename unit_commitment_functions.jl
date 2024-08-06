@@ -269,11 +269,29 @@ function constraint_gen_min_up_down_time_uc(pm::AbstractPowerModel, n::Int, i::I
     if n >= minup 
         vg_terms = sum( var(pm, t, :vg, i) for t in n-minup+1:n)
         JuMP.@constraint(pm.model, vg_terms <= ug)
+    elseif n < minup && day > 1
+        vg_terms = sum( var(pm, t, :vg, i) for t in 1:n) + sum(vg_prev_day[:gen][t] for t in minup-n:minup)
+        JuMP.@constraint(pm.model, vg_terms <= ug)
     end
     
     
     if n >= mindown 
         wg_terms = sum( var(pm, t, :wg, i) for t in n-mindown+1:n)
         JuMP.@constraint(pm.model, wg_terms <= 1 - ug)
+    elseif n < mindown && day > 1
+        wg_terms = sum( var(pm, t, :wg, i) for t in 1:n) + sum(wg_prev_day[:gen][t] for t in mindown-n:mindown)
+        JuMP.@constraint(pm.model, wg_terms <= 1 - ug)
     end
+
+
+    # if n >= minup 
+    #     vg_terms = sum( var(pm, t, :vg, i) for t in n-minup+1:n)
+    #     JuMP.@constraint(pm.model, vg_terms <= ug)
+    # end
+    
+    
+    # if n >= mindown 
+    #     wg_terms = sum( var(pm, t, :wg, i) for t in n-mindown+1:n)
+    #     JuMP.@constraint(pm.model, wg_terms <= 1 - ug)
+    # end
 end
