@@ -14,10 +14,7 @@ include("opf_violation_functions.jl")
 include("read_GA_data.jl")
 include("saving_prev_day_uc.jl")
 
-
-
 ## Step 0: Initilize the parameters, options, and files path 
-
 opt = Gurobi.Optimizer
 reserve_requirment = 0.2
 energy_not_served_cost = 10000.0
@@ -62,7 +59,6 @@ for day in 1:31 # loop through the days and solve multiperiod dcopf problems
 
     ## Save the previous day status
     ug_prev_day, vg_prev_day, wg_prev_day = save_uc_results(data, day, gen_status)
-
 end
 
 ## Step 2: Solve DCOPF problems for every day seperately
@@ -98,7 +94,7 @@ end
 
 # save the final generation results 
 
-# open("results/generator_outputs_base_case.json","w") do f 
-open("results/generator_outputs_30_percent.json","w") do f 
+open("results/generator_outputs_1_percent.json","w") do f 
+# open("results/generator_outputs_30_percent.json","w") do f 
     JSON.print(f, gens_data) 
 end

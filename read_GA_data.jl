@@ -309,7 +309,8 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
     load2030 = 257237714.5
     load2040 = 1070378180
     
-    percentage = 30
+    percentage = 5
+    # percentage = 30
     one_percent_of_EV = 24000
     ## 24000 EV represents 1 percent of cars on the road in georgia, 30% of cars on road, 2363 kilowatts hour, 1000 to convert to watts, 8760 hours in a year
     calcEV = one_percent_of_EV * percentage * 2363 * 1000 / 8760
