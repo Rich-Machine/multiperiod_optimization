@@ -25,10 +25,11 @@ energy_not_served_cost = 10000.0
 file_path = "/Users/rasiamah3/Library/CloudStorage/OneDrive-GeorgiaInstituteofTechnology/BTE_Model/BreakthroughEnergyGrid to PowerMod Code/Bus Data + Scripts/"
 ## CHANGE DATE: latest you can pick is december 31 hour 0
 ## DATE: Must be stored in these 3 variables
+day = 1 ## day: 1-31
 hour = 0 ## hour: 0-23
 month = 1 ## month: 1-12
 time_horizon = 24 ## Horizon is it will run 24 hours from the hour you pick
-
+data = read_GA_data(file_path, month, day, hour, time_horizon)
 
 ## Step 1: Solve UC problems for every day seperately 
 ## TODO: initialize UC problems using the previous day solution via (1) including initial values fields for the generators status and up time, and (2) modifying the minimum up/down time constraints 
@@ -36,66 +37,33 @@ time_horizon = 24 ## Horizon is it will run 24 hours from the hour you pick
 gen_status = Dict()
 for day in 1:31 # loop through the days and solve multiperiod dcopf problems
 
-    println("day $day")
+    println("This is day $day")
     data = read_GA_data(file_path, month, day, hour, time_horizon)
 
     ## Add reserve requirments and ENS cost
     for nw in keys(data["nw"])
         data["nw"][nw]["option"] = Dict("reserve_requirment" => reserve_requirment, "energy_not_served_cost" => energy_not_served_cost)
     end
-
-    # global ug_prev_day = Dict(g => [] for g in keys(data["nw"]["1"]["gen"]))  
-    # global wg_prev_day = Dict()
-    # global vg_prev_day = Dict()
+    
+    if day > 1
+        for i in 1:24
+            for gen in keys(data["nw"]["1"]["gen"])
+                data["nw"]["$i"]["gen"][gen]["vg_prev_day"] = vg_prev_day[gen][i]
+                data["nw"]["$i"]["gen"][gen]["wg_prev_day"] = wg_prev_day[gen][i]
+            end
+        end
+    end
 
     ## Solve UC problem
     result = solve_uc(data, opt; multinetwork=true)
 
-    # result = solve_uc(data, opt; multinetwork=true)
-
     ## Extract the generators status
     gen_status[day] = Dict(idx =>[result["solution"]["nw"]["$i"]["gen"][idx]["ug"]  for i in 1:24] for idx in keys(data["nw"]["1"]["gen"]) )
 
-    # save_uc_results(gen_status)
-    global ug_prev_day = Dict(g => [] for g in keys(data["nw"]["1"]["gen"]))
-    global wg_prev_day = Dict(g => [] for g in keys(data["nw"]["1"]["gen"]))
-    global vg_prev_day = Dict(g => [] for g in keys(data["nw"]["1"]["gen"]))
-    
-    for g in 1:length(keys(data["nw"]["1"]["gen"]))
-        if haskey(data["nw"]["1"]["gen"]["$g"], "minup") 
-            println("Generator $g has minup: $(data["nw"]["1"]["gen"]["$g"]["minup"]) and mindown: $(data["nw"]["1"]["gen"]["$g"]["mindown"])")
-        else 
-            push!(data["nw"]["1"]["gen"]["$g"], "minup" => 1)
-            push!(data["nw"]["1"]["gen"]["$g"], "mindown" => 1)
-        end
-    end
-    
-    for g in keys(data["nw"]["1"]["gen"])
-        for i in 24 - data["nw"]["1"]["gen"]["$g"]["minup"]:24
-            push!(ug_prev_day[g], gen_status[day][g][i])
-        end
-    end
-    
-    for g in keys(data["nw"]["1"]["gen"])
-        prev_status = ug_prev_day[g]
-        if prev_status[1] == 1 && any(prev_status .== 0)
-            transition_idx = findfirst(x -> x == 0, prev_status)
-            wg_prev_day[g] = fill(0, length(prev_status))
-            wg_prev_day[g][transition_idx] = 1
-        elseif prev_status[1] == 0 && any(prev_status .== 1)
-            transition_idx = findfirst(x -> x == 1, prev_status)
-            vg_prev_day[g] = fill(1, length(prev_status))
-            vg_prev_day[g][transition_idx] = 0
-        else
-            wg_prev_day[g] = fill(0, length(prev_status))
-            vg_prev_day[g] = fill(0, length(prev_status))
-        end
-    end
+    ## Save the previous day status
+    ug_prev_day, vg_prev_day, wg_prev_day = save_uc_results(data, day, gen_status)
+
 end
-
-
-
-
 
 ## Step 2: Solve DCOPF problems for every day seperately
 gen_output = Dict()
@@ -128,43 +96,9 @@ for g in keys(data["nw"]["1"]["gen"])
     gens_data[g] = Dict("id"=> data["nw"]["1"]["gen"][g]["source_id"][2], "type" => data["nw"]["1"]["gen"][g]["type"], "bus"=> data["nw"]["1"]["bus"]["$(data["nw"]["1"]["gen"][g]["gen_bus"])"]["source_id"][2], "output" => gens_pg)
 end
 
+# save the final generation results 
 
-# save the results 
-open("simulation_july_no_ev.json","w") do f 
+# open("results/generator_outputs_base_case.json","w") do f 
+open("results/generator_outputs_30_percent.json","w") do f 
     JSON.print(f, gens_data) 
-end
-
-# arranging the generation results via summing the generators power outputs in each bus
-gens_ids = unique([gens_data[i]["bus"] for i in keys(gens_data)])
-
-gens_data_new = Dict()
-for i in gens_ids
-    g_ids = findall(x -> x["bus"] == i, gens_data)
-    if !isempty(g_ids)
-        gens_data_new[i] = Dict("id"=> g_ids, "bus"=> i, "output" => sum(gens_data[j]["output"] for j in g_ids, dims =1))
-    end
-end
-
-open("simulation_july_gen_no_ev.json","w") do f 
-    JSON.print(f, gens_data_new) 
-end
-
-# extract the demand data
-load_data = Dict()
-data = read_GA_data(file_path, 7, 1, 0, 24*31)
-for l in keys(data["nw"]["1"]["load"])
-    loads_pd = []
-    c = 1
-    for day in 1:31
-        
-        for hour in 1:24
-            append!(loads_pd, data["nw"]["$c"]["load"][l]["pd"])
-            c += 1
-        end
-    end
-    load_data[data["nw"]["1"]["load"][l]["source_id"][2]] = Dict("id"=> l, "bus"=> data["nw"]["1"]["bus"]["$(data["nw"]["1"]["load"][l]["load_bus"])"]["source_id"][2], "output" => loads_pd)
-end
-
-open("simulation_july_load_no_ev.json","w") do f 
-    JSON.print(f, load_data) 
 end

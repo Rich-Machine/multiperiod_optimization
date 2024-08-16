@@ -303,7 +303,6 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
     ## EV NREL PICK 2026 / 2030 / 2040
     futureDate = 2026
     
-    
     ## Total EV loads for the future dates. Used for percentage calculation (watts).
     #fix this should increase
     load2026 = 48775127.12
@@ -311,7 +310,7 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
     load2040 = 1070378180
     
     percentage = 30
-    one_percent_of_EV=24000
+    one_percent_of_EV = 24000
     ## 24000 EV represents 1 percent of cars on the road in georgia, 30% of cars on road, 2363 kilowatts hour, 1000 to convert to watts, 8760 hours in a year
     calcEV = one_percent_of_EV * percentage * 2363 * 1000 / 8760
     
