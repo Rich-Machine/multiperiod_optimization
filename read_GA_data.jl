@@ -309,7 +309,8 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
     load2030 = 257237714.5
     load2040 = 1070378180
     
-    percentage = 5
+    ## Percentage of EVs on the road. This can be changed to 30% for the 30% scenario.
+    percentage = 1
     # percentage = 30
     one_percent_of_EV = 24000
     ## 24000 EV represents 1 percent of cars on the road in georgia, 30% of cars on road, 2363 kilowatts hour, 1000 to convert to watts, 8760 hours in a year
@@ -342,9 +343,7 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
             for i in 1:days[month - 1]
                 dayOfWeek = (dayOfWeek + 1) % 7
             end
-    
         end
-        
     end
     
     ## Logic to get the 24 hours of EV information
@@ -449,7 +448,6 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
         end
     
     end
-
 
     # remnove NaN loads
     # nan_load = [(i,n) for i in keys(data["nw"]["1"]["load"]) for n in 1:time_horizon if isnan(data["nw"]["$n"]["load"][i]["pd"]) ]
