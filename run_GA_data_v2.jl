@@ -7,6 +7,7 @@ using CSV
 using DataFrames
 using Gurobi
 using JSON
+using Dates
 
 include("unit_commitment_functions.jl")
 include("multiperiod_opf_functions.jl")
@@ -92,9 +93,32 @@ for g in keys(data["nw"]["1"]["gen"])
     gens_data[g] = Dict("id"=> data["nw"]["1"]["gen"][g]["source_id"][2], "type" => data["nw"]["1"]["gen"][g]["type"], "bus"=> data["nw"]["1"]["bus"]["$(data["nw"]["1"]["gen"][g]["gen_bus"])"]["source_id"][2], "output" => gens_pg)
 end
 
-# save the final generation results 
-
+# save the final generation results to a JSON file
 open("results/generator_outputs_1_percent.json","w") do f 
 # open("results/generator_outputs_30_percent.json","w") do f 
     JSON.print(f, gens_data) 
 end
+
+# save the final generation results to a CSV file
+df = DataFrame()
+for g in keys(data)
+    df[!, g] = data[g]["output"]
+end
+# CSV.write("results/july_generator_outputs_1_percent.csv", df, header = true)
+CSV.write("results/july_generator_outputs_30_percent.csv", df, header = true)
+
+## Trying to include timestamps to the CSV file. Not complete
+# # Create an array of DateTime objects representing the hour-by-hour timestamps in UTC
+# timestamps = [DateTime(2021, month, day, hour, 0, 0) for day in 1:31, hour in 0:23]
+
+# # Reshape the timestamps array into a 1-dimensional array
+# timestamps = reshape(timestamps, 1, :)
+
+# # Convert the timestamps array to a DataFrame
+# timestamps_df = DataFrame(timestamp = timestamps)
+
+# # Concatenate the timestamps DataFrame with the existing generator outputs DataFrame
+# df = hcat(timestamps_df, df)
+
+# # Save the updated DataFrame to a CSV file
+# CSV.write("results/generator_outputs_utc.csv", df)
