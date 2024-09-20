@@ -149,7 +149,8 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
         end
 
         ## Adds all fields in the dictionary according to the link and spreadsheet.
-        data["branch"]["$counter"] = Dict("source_id" => Any["branch", counter], "transformer" => is_transformer, "index" => counter, "f_bus" => x.from_bus_id, "t_bus" => x.to_bus_id, "br_r" => x.r, "br_x" => x.x, "br_status" => x.status, "rate_a" => x.rateA/100, "rate_b" => x.rateB/100, "rate_c" => x.rateC/100, "tap" => newRatio, "shift" => x.angle, "angmin" => -1.57, "angmax" => 1.57, "pf" => x.Pf/100, "qf" => x.Qf/100, "pt" => x.Pt/100, "qt" => x.Qt/100, "b_fr" => x.b/2, "b_to" => x.b/2, "g_fr" => 0.0, "g_to" => 0.0, "branch_device_type" => x.branch_device_type, "from_zone_id" => newZone1, "to_zone_id" => newZone2, "from_county_id" => x.from_county_id, "from_county_name" => x.from_county_name, "to_county_id" => x.to_county_id, "to_county_name" => x.to_county_name)
+        # data["branch"]["$counter"] = Dict("source_id" => Any["branch", counter], "transformer" => is_transformer, "index" => counter, "f_bus" => x.from_bus_id, "t_bus" => x.to_bus_id, "br_r" => x.r, "br_x" => x.x, "br_status" => x.status, "rate_a" => x.rateA/100, "rate_b" => x.rateB/100, "rate_c" => x.rateC/100, "tap" => newRatio, "shift" => x.angle, "angmin" => -1.57, "angmax" => 1.57, "pf" => x.Pf/100, "qf" => x.Qf/100, "pt" => x.Pt/100, "qt" => x.Qt/100, "b_fr" => x.b/2, "b_to" => x.b/2, "g_fr" => 0.0, "g_to" => 0.0, "branch_device_type" => x.branch_device_type, "from_zone_id" => newZone1, "to_zone_id" => newZone2, "from_county_id" => x.from_county_id, "from_county_name" => x.from_county_name, "to_county_id" => x.to_county_id, "to_county_name" => x.to_county_name)
+        data["branch"]["$counter"] = Dict("source_id" => Any["branch", counter], "transformer" => is_transformer, "index" => counter, "f_bus" => x.from_bus_id, "t_bus" => x.to_bus_id, "br_r" => x.r, "br_x" => x.x, "br_status" => x.status, "rate_a" => x.rateA/100 * 1.1, "rate_b" => x.rateB/100 *1.1, "rate_c" => x.rateC/100 * 1.1, "tap" => newRatio, "shift" => x.angle, "angmin" => -1.57, "angmax" => 1.57, "pf" => x.Pf/100, "qf" => x.Qf/100, "pt" => x.Pt/100, "qt" => x.Qt/100, "b_fr" => x.b/2, "b_to" => x.b/2, "g_fr" => 0.0, "g_to" => 0.0, "branch_device_type" => x.branch_device_type, "from_zone_id" => newZone1, "to_zone_id" => newZone2, "from_county_id" => x.from_county_id, "from_county_name" => x.from_county_name, "to_county_id" => x.to_county_id, "to_county_name" => x.to_county_name)
 
         if "$counter" in keys(branch_violation)
             data["branch"]["$counter"]["rate_a"] = ceil((data["branch"]["$counter"]["rate_a"] + branch_violation["$counter"]) *1.2)
@@ -310,7 +311,7 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
     load2040 = 1070378180
     
     ## Percentage of EVs on the road. This can be changed to 30% for the 30% scenario.
-    percentage = 1
+    # percentage = 1
     # percentage = 30
     one_percent_of_EV = 24000
     ## 24000 EV represents 1 percent of cars on the road in georgia, 30% of cars on road, 2363 kilowatts hour, 1000 to convert to watts, 8760 hours in a year
@@ -377,8 +378,6 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
         ## Ex: Data first starts with all hour month 1 week 0 hour 0, then moves to month 1 week 0 hour 1 once all counties are looked at.
         ## When the pastHour is different than current hour, then it must be the case we are looking at a new hour.
         pastHour = x.hour
-        
-    
     end
 
     ## Gets the demand so that pd and qd can be set accurately

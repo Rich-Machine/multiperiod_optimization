@@ -25,15 +25,16 @@ file_path = "/Users/rasiamah3/Library/CloudStorage/OneDrive-GeorgiaInstituteofTe
 ## DATE: Must be stored in these 3 variables
 day = 1 ## day: 1-31
 hour = 0 ## hour: 0-23
-month = 1 ## month: 1-12
+month = 6 ## month: 1-12
 time_horizon = 24 ## Horizon is it will run 24 hours from the hour you pick
+percentage = 30 ## percentage of EV in the total cars
 data = read_GA_data(file_path, month, day, hour, time_horizon)
 
+# Record starting time
+start_time = time()
 ## Step 1: Solve UC problems for every day seperately 
-## TODO: initialize UC problems using the previous day solution via (1) including initial values fields for the generators status and up time, and (2) modifying the minimum up/down time constraints 
-
 gen_status = Dict()
-for day in 1:31 # loop through the days and solve multiperiod dcopf problems
+for day in 1:30 # loop through the days and solve multiperiod dcopf problems
 
     println("This is day $day")
     data = read_GA_data(file_path, month, day, hour, time_horizon)
@@ -64,7 +65,7 @@ end
 
 ## Step 2: Solve DCOPF problems for every day seperately
 gen_output = Dict()
-for day in 1:31 # loop through the days and solve multiperiod dcopf problems
+for day in 1:30 # loop through the days and solve multiperiod dcopf problems
 
     println("day $day")
     data = read_GA_data(file_path, month, day, hour, time_horizon)
@@ -83,42 +84,64 @@ for day in 1:31 # loop through the days and solve multiperiod dcopf problems
     gen_output[day] = Dict(idx =>[haskey(result["solution"]["nw"]["$i"]["gen"], idx) ? result["solution"]["nw"]["$i"]["gen"][idx]["pg"] : 0.0  for i in 1:24] for idx in keys(data["nw"]["1"]["gen"]) )
 end
 
+# Calculate training time
+calculation_time = time() - start_time
+println("Solving time: $calculation_time seconds")
+
 # Arrange the generation results 
 gens_data = Dict()
+timestamps = [DateTime(2021, month, day, hour, 0, 0) for hour in 0:23, day in 1:30]
+timestamps = reshape(timestamps, 1, :)
+gens_data[Date] = timestamps
 for g in keys(data["nw"]["1"]["gen"])
     gens_pg = []
-    for day in 1:31
+    for day in 1:30
         append!(gens_pg, gen_output[day][g])
     end
     gens_data[g] = Dict("id"=> data["nw"]["1"]["gen"][g]["source_id"][2], "type" => data["nw"]["1"]["gen"][g]["type"], "bus"=> data["nw"]["1"]["bus"]["$(data["nw"]["1"]["gen"][g]["gen_bus"])"]["source_id"][2], "output" => gens_pg)
 end
 
 # save the final generation results to a JSON file
-open("results/generator_outputs_1_percent.json","w") do f 
-# open("results/generator_outputs_30_percent.json","w") do f 
+open("results/generator_outputs_for_June_at_30_percent_EV_penetration.json","w") do f 
     JSON.print(f, gens_data) 
 end
 
 # save the final generation results to a CSV file
-df = DataFrame()
-for g in keys(data)
-    df[!, g] = data[g]["output"]
+df = DataFrame(Date = vec(gens_data[Date]))
+for g in keys(gens_data)
+    if g!= Date
+        df[!, g] = gens_data[g]["output"]
+    end
 end
-# CSV.write("results/july_generator_outputs_1_percent.csv", df, header = true)
-CSV.write("results/july_generator_outputs_30_percent.csv", df, header = true)
 
-## Trying to include timestamps to the CSV file. Not complete
-# # Create an array of DateTime objects representing the hour-by-hour timestamps in UTC
-# timestamps = [DateTime(2021, month, day, hour, 0, 0) for day in 1:31, hour in 0:23]
+CSV.write("results/generator_outputs_for_June_at_30_percent_EV_penetration..csv", df, header=true)
 
-# # Reshape the timestamps array into a 1-dimensional array
-# timestamps = reshape(timestamps, 1, :)
+filtered_gen = CSV.read("$file_path/filtered_gen.csv", DataFrame)
+count = 0
+for i in 1:length(filtered_gen[!, "plant_id"])
+    
+    for g in keys(data["nw"]["1"]["gen"])
+        if filtered_gen[i, "plant_id"] == data["nw"]["1"]["gen"][g]["plant_id"]
+            data["nw"]["1"]["gen"][g]["lat"] = filtered_gen[i, "lat"]
+            data["nw"]["1"]["gen"][g]["lon"] = filtered_gen[i, "lon"]
+            count = count+1
+        end
+    end
+    display(count)
+end
+for g in keys(data["nw"]["1"]["gen"])
+    if !haskey(data["nw"]["1"]["gen"][g], "lat")
+        data["nw"]["1"]["gen"][g]["lat"] = "NA"
+        data["nw"]["1"]["gen"][g]["lon"] = "NA"
+    end
+end
+generator_data = ["plant_id", "type", "county_name", "zone_id", "lat", "lon"]
+df = DataFrame()
+for g in keys(data["nw"]["1"]["gen"])
+    # if data["nw"]["1"]["gen"][g]["type"] == "coal" || data["nw"]["1"]["gen"][g]["type"] == "dfo" || data["nw"]["1"]["gen"][g]["type"] == "ng" || data["nw"]["1"]["gen"][g]["type"] == "hydro" || data["nw"]["1"]["gen"][g]["type"] == "nuclear" || data["nw"]["1"]["gen"][g]["type"] == "wind" || data["nw"]["1"]["gen"][g]["type"] == "solar"
+        df[!, g] = [data["nw"]["1"]["gen"][g][key] for key in generator_data]
+    # end
+end
 
-# # Convert the timestamps array to a DataFrame
-# timestamps_df = DataFrame(timestamp = timestamps)
+CSV.write("results/full_generator_data.csv", df, header = true)
 
-# # Concatenate the timestamps DataFrame with the existing generator outputs DataFrame
-# df = hcat(timestamps_df, df)
-
-# # Save the updated DataFrame to a CSV file
-# CSV.write("results/generator_outputs_utc.csv", df)
