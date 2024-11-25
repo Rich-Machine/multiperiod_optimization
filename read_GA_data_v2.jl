@@ -177,13 +177,33 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
         ## Startup and shutdown costs were not stored within the genereator dataset. These needed to be calculated manually based on generator type.
         ## This logic sets the cost for each generator appropriately. 
         cost = 0.0
+        minup = 1
         if x.type == "hydro"
             cost = 0.0
+            minup = 0
+        elseif x.type == "solar"
+            cost = 0.0
+            minup = 0
         elseif x.type == "ng"
             if x.Pmax <= 100
                 cost = 5665.23
             else
                 cost = 28046.68
+            end
+            if x.plant_id == 3927 || x.plant_id == 3928 || x.plant_id == 3929 || x.plant_id == 3930 || x.plant_id == 3931 || x.plant_id == 3932
+                minup = 6.2 
+            elseif x.plant_id == 3987 || x.plant_id == 3988 || x.plant_id == 3989
+                minup = 6.2
+            elseif x.plant_id == 4004 || x.plant_id == 4005 || x.plant_id == 4006
+                minup = 6.2 
+            elseif x.plant_id == 3997 || x.plant_id == 3801 || x.plant_id == 3802
+                minup = 6.2
+            elseif x.plant_id == 4031 || x.plant_id == 4032 || x.plant_id == 4033
+                minup = 6.2
+            elseif x.plant_id == 4064 || x.plant_id == 4065 || x.plant_id == 4066 
+                minup = 6.2
+            elseif x.plant_id == 4116 || x.plant_id == 4117 || x.plant_id == 4118 || x.plant_id == 4119 || x.plant_id == 4120 ||x.plant_id == 4121
+                minup = 6.2
             end
         elseif x.type == "dfo"
             if x.Pmax < 5
@@ -203,11 +223,11 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
             end
         elseif x.type == "coal"
             cost = 11172.01435
+            minup = 12
         end
 
-
         ## Note: plant_id is the new key instead of bus_id. Generators have multiple buses, and thus bus_id will contain duplicates and cannot be used as a key.
-        data["gen"]["$(x.plant_id)"] = Dict("source_id" => Any["gen", x.plant_id], "startup" => cost, "shutdown" => cost, "index" => x.plant_id, "gen_bus" => x.bus_id, "plant_id" => x.plant_id, "pg" => (x.Pg)/100, "qg" => x.Qg/100, "pmax" => x.Pmax/100, "pmin" => x.Pmin/100, "qmax" => x.Qmax/100, "qmin" => x.Qmin/100, "gen_status" => x.status, "vg" => x.Vg, "mBase" => 100, "ramp_30" => x.ramp_30, "apf" => x.apf, "type" => x.type, "GenFuelCost" => x.GenFuelCost, "GenIOB" => x.GenIOB, "GenIOC" => x.GenIOC, "zone_id" => newZone, "zone_name" => x.zone_name, "county_id" => x.county_id, "county_name" => x.county_name)
+        data["gen"]["$(x.plant_id)"] = Dict("source_id" => Any["gen", x.plant_id], "startup" => cost, "shutdown" => cost, "index" => x.plant_id, "gen_bus" => x.bus_id, "plant_id" => x.plant_id, "pg" => (x.Pg)/100, "qg" => x.Qg/100, "pmax" => x.Pmax/100, "pmin" => x.Pmin/100, "qmax" => x.Qmax/100, "qmin" => x.Qmin/100, "gen_status" => x.status, "vg" => x.Vg, "mBase" => 100, "ramp_30" => x.ramp_30, "apf" => x.apf, "type" => x.type, "GenFuelCost" => x.GenFuelCost, "GenIOB" => x.GenIOB, "GenIOC" => x.GenIOC, "zone_id" => newZone, "zone_name" => x.zone_name, "county_id" => x.county_id, "county_name" => x.county_name, "minup" => minup)
     end
 
 

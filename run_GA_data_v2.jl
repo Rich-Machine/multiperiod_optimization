@@ -12,7 +12,7 @@ using Dates
 include("unit_commitment_functions.jl")
 include("multiperiod_opf_functions.jl")
 include("opf_violation_functions.jl")
-include("read_GA_data.jl")
+include("read_GA_data_v2.jl")
 include("saving_prev_day_uc.jl")
 
 ## Step 0: Initilize the parameters, options, and files path 
@@ -20,12 +20,12 @@ opt = Gurobi.Optimizer
 reserve_requirment = 0.2
 energy_not_served_cost = 10000.0
 
-file_path = "/Users/rasiamah3/Library/CloudStorage/OneDrive-GeorgiaInstituteofTechnology/BTE_Model/BreakthroughEnergyGrid to PowerMod Code/Bus Data + Scripts/"
+file_path = "/Users/hannakhor/Library/CloudStorage/OneDrive-GeorgiaInstituteofTechnology/BTE_Model/BreakthroughEnergyGrid to PowerMod Code/Bus Data + Scripts/"
 ## CHANGE DATE: latest you can pick is december 31 hour 0
 ## DATE: Must be stored in these 3 variables
 day = 1 ## day: 1-31
 hour = 0 ## hour: 0-23
-month = 6 ## month: 1-12
+month = 7 ## month: 1-12
 time_horizon = 24 ## Horizon is it will run 24 hours from the hour you pick
 percentage = 30 ## percentage of EV in the total cars
 data = read_GA_data(file_path, month, day, hour, time_horizon)
@@ -114,7 +114,7 @@ for g in keys(gens_data)
     end
 end
 
-CSV.write("results/generator_outputs_for_June_at_30_percent_EV_penetration..csv", df, header=true)
+CSV.write("results/generator_outputs_for_June_at_30_percent_EV_penetration.csv", df, header=true)
 
 filtered_gen = CSV.read("$file_path/filtered_gen.csv", DataFrame)
 count = 0
