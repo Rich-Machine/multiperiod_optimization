@@ -27,6 +27,7 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
     data["dcline"] = Dict{String, Any}()
     data["source_version"] = "2"
 
+    display("Reading GA data")
     # Relaxed branch thermal limit values after solving DCOPF using solve_opf_violation
     branch_violation = Dict{Any, Any}("1261" => 0.01680382970460048, "2325" => 0.10838821464751436, "2153" => 0.09970077003625133, "831" => 0.08908124204872525, "1979" => 0.2000024118977588, "564" => 0.08349879529334081, "1995" => 0.07747992266596149, "8" => 0.21875435911800845, "2098" => 0.8282357926038164, "2156" => 0.3976789999999999, "1187" => 0.5988394610155541, "2147" => 0.3642789999999998, "2747" => 0.6144280816871648, "2154" => 0.06415336424221674, "2089" => 0.3131856310314336, "1978" => 0.3327680466354961, "1482" => 0.5710899999999999, "2088" => 0.4838136113846163, "2592" => 0.1495119627357171,"2489" => 0.037335307176020294, "1671" => 0.10825830713288709, "681" => 0.019742864227433543, "1233" => 0.02360300000000004, "2098" => 0.8630087142931544, "2144" => 0.21237899999999987, "2752" => 0.8408399600561465, )
 
@@ -94,7 +95,8 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
         data["shunt"]["$(x.bus_id)"] = Dict("source_id" => Any["bus", x.bus_id], "shunt_bus" => x.bus_id, "index" => x.bus_id, "status" => 1, "gs" => x.Gs, "bs" => x.Bs)
         
     end
-
+    
+    display("Reading GA data")
     ## Add buses percentage of system based on zone_id 19 or 20
     for g in keys(data["bus"])
         if data["bus"][g]["zone_id"] == 1
@@ -191,19 +193,19 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
                 cost = 28046.68
             end
             if x.plant_id == 3927 || x.plant_id == 3928 || x.plant_id == 3929 || x.plant_id == 3930 || x.plant_id == 3931 || x.plant_id == 3932
-                minup = 6.2 
+                minup = 6 
             elseif x.plant_id == 3987 || x.plant_id == 3988 || x.plant_id == 3989
-                minup = 6.2
+                minup = 6
             elseif x.plant_id == 4004 || x.plant_id == 4005 || x.plant_id == 4006
-                minup = 6.2 
+                minup = 6 
             elseif x.plant_id == 3997 || x.plant_id == 3801 || x.plant_id == 3802
-                minup = 6.2
+                minup = 6
             elseif x.plant_id == 4031 || x.plant_id == 4032 || x.plant_id == 4033
-                minup = 6.2
+                minup = 6
             elseif x.plant_id == 4064 || x.plant_id == 4065 || x.plant_id == 4066 
-                minup = 6.2
+                minup = 6
             elseif x.plant_id == 4116 || x.plant_id == 4117 || x.plant_id == 4118 || x.plant_id == 4119 || x.plant_id == 4120 ||x.plant_id == 4121
-                minup = 6.2
+                minup = 6
             end
         elseif x.type == "dfo"
             if x.Pmax < 5
@@ -298,6 +300,7 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
     ## clean and arrange to data using PowerModels
     new_data = make_basic_network(data)
 
+    display("Network creation complete")
     # ## change the line flow to make the problem feasiable
     # result = solve_opf_violation(new_data, DCPPowerModel ,opt)
     # bus_shaded = Dict(idx => bus["nse"] for (idx, bus) in result["solution"]["bus"] if bus["nse"] > 0)
@@ -335,28 +338,30 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
     global counter = 1
     flag = false
     pastHour = 0
-    nrel_data = CSV.read("$file_path/aggregatedCounties.csv", DataFrame)
 
-    counties = ["Appling", "Atkinson", "Bacon", "Baker", "Baldwin", "Banks", "Barrow", "Bartow", "Ben Hill", "Berrien", "Bibb", "Bleckley", "Brantley", "Brooks", "Bryan", "Bulloch", "Burke", "Butts", "Calhoun", "Camden", "Candler", "Carroll", "Catoosa", "Charlton", "Chatham", "Chattahoochee", "Chattooga", "Cherokee", "Clarke", "Clay", "Clayton", "Clinch", "Cobb", "Coffee", "Colquitt", "Columbia", "Cook", "Coweta", "Crawford", "Crisp", "Dade", "Dawson", "De Kalb", "Decatur", "Dodge", "Dooly", "Dougherty", "Douglas", "Early", "Echols", "Effingham", "Elbert", "Emanuel", "Evans", "Fannin", "Fayette", "Floyd", "Forsyth", "Franklin", "Fulton", "Gilmer", "Glascock", "Glynn", "Gordon", "Grady", "Greene", "Gwinnett", "Habersham", "Hall", "Hancock", "Haralson", "Harris", "Hart", "Heard", "Henry", "Houston", "Irwin", "Jackson", "Jasper", "Jeff Davis", "Jefferson", "Jenkins", "Johnson", "Jones", "Lamar", "Lanier", "Laurens", "Lee", "Liberty", "Lincoln", "Long", "Lowndes", "Lumpkin", "Mcduffie", "Mcintosh", "Macon", "Madison", "Marion", "Meriwether", "Miller", "Mitchell", "Monroe", "Montgomery", "Morgan", "Murray", "Muscogee", "Newton", "Oconee", "Oglethorpe", "Paulding", "Peach", "Pickens", "Pierce", "Pike", "Polk", "Pulaski", "Putnam", "Quitman", "Rabun", "Randolph", "Richmond", "Rockdale", "Schley", "Screven", "Seminole", "Spalding", "Stephens", "Stewart", "Sumter", "Talbot", "Taliaferro", "Tattnall", "Taylor", "Telfair", "Terrell", "Thomas", "Tift", "Toombs", "Towns", "Treutlen", "Troup", "Turner", "Twiggs", "Union", "Upson", "Walker", "Walton", "Ware", "Warren", "Washington", "Wayne", "Webster", "Wheeler", "White", "Whitfield", "Wilcox", "Wilkes", "Wilkinson", "Worth"]
-    points = []
-    important_points = Dict()
-    for hour in 0:23
-        important_points[hour] = Dict()
-        for county in counties
-            points = []
-            important_points[hour][county] = Dict()
-            for x in eachrow(nrel_data)
-                for i in 0:6
-                    if x.geography == county && x.day_of_week == i && x.month == 1 && x.hour == hour # assume the shape for the different months are the same
-                        push!(points, x.Load)
-                        if i == 6
-                            important_points[hour][county] = points./maximum(points)   
-                        end               
-                    end
-                end
-            end
-        end
-    end
+    # display("Reading EV data")
+    # nrel_data = CSV.read("$file_path/aggregatedCounties.csv", DataFrame)
+
+    # counties = ["Appling", "Atkinson", "Bacon", "Baker", "Baldwin", "Banks", "Barrow", "Bartow", "Ben Hill", "Berrien", "Bibb", "Bleckley", "Brantley", "Brooks", "Bryan", "Bulloch", "Burke", "Butts", "Calhoun", "Camden", "Candler", "Carroll", "Catoosa", "Charlton", "Chatham", "Chattahoochee", "Chattooga", "Cherokee", "Clarke", "Clay", "Clayton", "Clinch", "Cobb", "Coffee", "Colquitt", "Columbia", "Cook", "Coweta", "Crawford", "Crisp", "Dade", "Dawson", "De Kalb", "Decatur", "Dodge", "Dooly", "Dougherty", "Douglas", "Early", "Echols", "Effingham", "Elbert", "Emanuel", "Evans", "Fannin", "Fayette", "Floyd", "Forsyth", "Franklin", "Fulton", "Gilmer", "Glascock", "Glynn", "Gordon", "Grady", "Greene", "Gwinnett", "Habersham", "Hall", "Hancock", "Haralson", "Harris", "Hart", "Heard", "Henry", "Houston", "Irwin", "Jackson", "Jasper", "Jeff Davis", "Jefferson", "Jenkins", "Johnson", "Jones", "Lamar", "Lanier", "Laurens", "Lee", "Liberty", "Lincoln", "Long", "Lowndes", "Lumpkin", "Mcduffie", "Mcintosh", "Macon", "Madison", "Marion", "Meriwether", "Miller", "Mitchell", "Monroe", "Montgomery", "Morgan", "Murray", "Muscogee", "Newton", "Oconee", "Oglethorpe", "Paulding", "Peach", "Pickens", "Pierce", "Pike", "Polk", "Pulaski", "Putnam", "Quitman", "Rabun", "Randolph", "Richmond", "Rockdale", "Schley", "Screven", "Seminole", "Spalding", "Stephens", "Stewart", "Sumter", "Talbot", "Taliaferro", "Tattnall", "Taylor", "Telfair", "Terrell", "Thomas", "Tift", "Toombs", "Towns", "Treutlen", "Troup", "Turner", "Twiggs", "Union", "Upson", "Walker", "Walton", "Ware", "Warren", "Washington", "Wayne", "Webster", "Wheeler", "White", "Whitfield", "Wilcox", "Wilkes", "Wilkinson", "Worth"]
+    # points = []
+    # important_points = Dict()
+    # for hour in 0:23
+    #     important_points[hour] = Dict()
+    #     for county in counties
+    #         points = []
+    #         important_points[hour][county] = Dict()
+    #         for x in eachrow(nrel_data)
+    #             for i in 0:6
+    #                 if x.geography == county && x.day_of_week == i && x.month == 1 && x.hour == hour # assume the shape for the different months are the same
+    #                     push!(points, x.Load)
+    #                     if i == 6
+    #                         important_points[hour][county] = points./maximum(points)   
+    #                     end               
+    #                 end
+    #             end
+    #         end
+    #     end
+    # end
 
     ## Gets the demand so that pd and qd can be set accurately
     econs_data = CSV.read("$file_path/econs_data.csv", DataFrame)
@@ -382,6 +387,7 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
     end
     stringDate = string(year) * "-" * stringMonth * "-" * stringDay * " " * stringHour * ":00:00"
     
+    display("Reading demand data")
     ## Loop over each row in the demand to find the right time
     for x in eachrow(demand)
     
@@ -391,7 +397,6 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
             newPd19 = x["19"] / 100
             newPd20 = x["20"] / 100
             newPd = 0
-            countyLoadDict = important_points[counter-1]
     
             ## Logic to set the new pd and qd for each entry in the hour.
             hourData = data["nw"][string(counter)]["load"]
@@ -413,11 +418,11 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
                 end
     
                 ## set pd
-                if data["nw"][string(counter)]["bus"][g]["county_name"] != "NA" && get(countyLoadDict, data["nw"][string(counter)]["bus"][g]["county_name"], 0) != 0
+                if data["nw"][string(counter)]["bus"][g]["county_name"] != "NA"
                     for rows in eachrow(econs_data)
                         if rows.month == month && data["nw"][string(counter)]["bus"][g]["county_name"] == rows.countyname && rows.year == future_year
-                            multiplying_factor = rows.ev_count * 2363 * 1000 / 8760  ## 2363 kilowatts hour, 1000 to convert to watts, 8760 hours in a year
-                            newPd = newPd + important_points[counter-1][data["nw"][string(counter)]["bus"][g]["county_name"]][day] * hourData[g]["percentage_county"] * multiplying_factor
+                            multiplying_factor = rows.ev_count * 5 * 0.000000000001  ## Used 5 as the average EV load is 5kW (multiplied by 0.001 to get MW)
+                            newPd = newPd + important_points[counter-1][data["nw"][string(counter)]["bus"][g]["county_name"]][day%7 + 1] * hourData[g]["percentage_county"] * multiplying_factor
                         end
                     end
                 end
