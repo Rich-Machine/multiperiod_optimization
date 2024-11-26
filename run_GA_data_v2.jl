@@ -20,18 +20,42 @@ opt = Gurobi.Optimizer
 reserve_requirment = 0.2
 energy_not_served_cost = 10000.0
 
-file_path = "/Users/hannakhor/Library/CloudStorage/OneDrive-GeorgiaInstituteofTechnology/BTE_Model/BreakthroughEnergyGrid to PowerMod Code/Bus Data + Scripts/"
+file_path = "/Users/rasiamah3/Library/CloudStorage/OneDrive-GeorgiaInstituteofTechnology/BTE_Model/BreakthroughEnergyGrid to PowerMod Code/Bus Data + Scripts/"
 ## CHANGE DATE: latest you can pick is december 31 hour 0
 ## DATE: Must be stored in these 3 variables
 day = 1 ## day: 1-31
 hour = 0 ## hour: 0-23
 month = 7 ## month: 1-12
 time_horizon = 24 ## Horizon is it will run 24 hours from the hour you pick
+global future_year = 2026
 percentage = 30 ## percentage of EV in the total cars
-data = read_GA_data(file_path, month, day, hour, time_horizon)
+# data = read_GA_data(file_path, month, day, hour, time_horizon)
 
 # Record starting time
 start_time = time()
+display("Reading EV data")
+nrel_data = CSV.read("$file_path/aggregatedCounties.csv", DataFrame)
+counties = ["Appling", "Atkinson", "Bacon", "Baker", "Baldwin", "Banks", "Barrow", "Bartow", "Ben Hill", "Berrien", "Bibb", "Bleckley", "Brantley", "Brooks", "Bryan", "Bulloch", "Burke", "Butts", "Calhoun", "Camden", "Candler", "Carroll", "Catoosa", "Charlton", "Chatham", "Chattahoochee", "Chattooga", "Cherokee", "Clarke", "Clay", "Clayton", "Clinch", "Cobb", "Coffee", "Colquitt", "Columbia", "Cook", "Coweta", "Crawford", "Crisp", "Dade", "Dawson", "De Kalb", "Decatur", "Dodge", "Dooly", "Dougherty", "Douglas", "Early", "Echols", "Effingham", "Elbert", "Emanuel", "Evans", "Fannin", "Fayette", "Floyd", "Forsyth", "Franklin", "Fulton", "Gilmer", "Glascock", "Glynn", "Gordon", "Grady", "Greene", "Gwinnett", "Habersham", "Hall", "Hancock", "Haralson", "Harris", "Hart", "Heard", "Henry", "Houston", "Irwin", "Jackson", "Jasper", "Jeff Davis", "Jefferson", "Jenkins", "Johnson", "Jones", "Lamar", "Lanier", "Laurens", "Lee", "Liberty", "Lincoln", "Long", "Lowndes", "Lumpkin", "Mcduffie", "Mcintosh", "Macon", "Madison", "Marion", "Meriwether", "Miller", "Mitchell", "Monroe", "Montgomery", "Morgan", "Murray", "Muscogee", "Newton", "Oconee", "Oglethorpe", "Paulding", "Peach", "Pickens", "Pierce", "Pike", "Polk", "Pulaski", "Putnam", "Quitman", "Rabun", "Randolph", "Richmond", "Rockdale", "Schley", "Screven", "Seminole", "Spalding", "Stephens", "Stewart", "Sumter", "Talbot", "Taliaferro", "Tattnall", "Taylor", "Telfair", "Terrell", "Thomas", "Tift", "Toombs", "Towns", "Treutlen", "Troup", "Turner", "Twiggs", "Union", "Upson", "Walker", "Walton", "Ware", "Warren", "Washington", "Wayne", "Webster", "Wheeler", "White", "Whitfield", "Wilcox", "Wilkes", "Wilkinson", "Worth"]
+points = []
+important_points = Dict()
+for hour in 0:23
+    important_points[hour] = Dict()
+    for county in counties
+        points = []
+        important_points[hour][county] = Dict()
+        for x in eachrow(nrel_data)
+            for i in 0:6
+                if x.geography == county && x.day_of_week == i && x.month == 1 && x.hour == hour # assume the shape for the different months are the same
+                    push!(points, x.Load)
+                    if i == 6
+                        important_points[hour][county] = points./maximum(points)   
+                    end               
+                end
+            end
+        end
+    end
+end
+
 ## Step 1: Solve UC problems for every day seperately 
 gen_status = Dict()
 for day in 1:30 # loop through the days and solve multiperiod dcopf problems
