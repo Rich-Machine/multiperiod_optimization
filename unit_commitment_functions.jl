@@ -277,7 +277,7 @@ function constraint_gen_min_up_down_time_uc(pm::AbstractPowerModel, n::Int, i::I
 
     
     if n >= mindown 
-        wg_terms = sum( var(pm, t, :wg, i) for t in n-mindown+1:n)
+        wg_terms = sum( var(pm, t, :wg, i) for t in n-mindown+1:n; init=0)
     elseif n <  mindown && day > 1
         wg_terms = sum( var(pm, t, :wg, i) for t in 1:n) + sum(ref(pm, n, :gen, :wg_prev_day for n in 24-minup+1+n:24))
     end
