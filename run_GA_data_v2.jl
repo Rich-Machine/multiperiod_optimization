@@ -28,8 +28,6 @@ hour = 0 ## hour: 0-23
 month = 7 ## month: 1-12
 time_horizon = 24 ## Horizon is it will run 24 hours from the hour you pick
 global future_year = 2026
-percentage = 30 ## percentage of EV in the total cars
-# data = read_GA_data(file_path, month, day, hour, time_horizon)
 
 # Record starting time
 start_time = time()
@@ -58,7 +56,8 @@ end
 
 ## Step 1: Solve UC problems for every day seperately 
 gen_status = Dict()
-for day in 1:30 # loop through the days and solve multiperiod dcopf problems
+uc_results = Dict()
+for day in 1:31 # loop through the days and solve multiperiod dcopf problems
 
     println("This is day $day")
     data = read_GA_data(file_path, month, day, hour, time_horizon)
@@ -82,90 +81,61 @@ for day in 1:30 # loop through the days and solve multiperiod dcopf problems
 
     ## Extract the generators status
     gen_status[day] = Dict(idx =>[result["solution"]["nw"]["$i"]["gen"][idx]["ug"]  for i in 1:24] for idx in keys(data["nw"]["1"]["gen"]) )
+    uc_results[day] = Dict(idx =>[result["solution"]["nw"]["$i"]["gen"][idx]["pg"]  for i in 1:24] for idx in keys(data["nw"]["1"]["gen"]) )
 
     ## Save the previous day status
     ug_prev_day, vg_prev_day, wg_prev_day = save_uc_results(data, day, gen_status)
 end
 
 ## Step 2: Solve DCOPF problems for every day seperately
-gen_output = Dict()
-for day in 1:30 # loop through the days and solve multiperiod dcopf problems
+# gen_output = Dict()
+# for day in 1:31 # loop through the days and solve multiperiod dcopf problems
 
-    println("day $day")
-    data = read_GA_data(file_path, month, day, hour, time_horizon)
+#     println("day $day")
+#     data = read_GA_data(file_path, month, day, hour, time_horizon)
 
-    ## Add generator status 
-    for nw in keys(data["nw"])
-        for (i, gen) in data["nw"][nw]["gen"]
-            gen["gen_status"] = gen_status[day][i][parse(Int64, nw)]
-        end
-    end
+#     ## Add generator status 
+#     for nw in keys(data["nw"])
+#         for (i, gen) in data["nw"][nw]["gen"]
+#             gen["gen_status"] = gen_status[day][i][parse(Int64, nw)]
+#         end
+#     end
     
-    ## Solve OPF problem
-    result = solve_mp_opf_ramp(data, DCPPowerModel, opt; multinetwork=true)
+#     ## Solve OPF problem
+#     result = solve_mp_opf_ramp(data, DCPPowerModel, opt; multinetwork=true)
 
-    ## Extract the generators output
-    gen_output[day] = Dict(idx =>[haskey(result["solution"]["nw"]["$i"]["gen"], idx) ? result["solution"]["nw"]["$i"]["gen"][idx]["pg"] : 0.0  for i in 1:24] for idx in keys(data["nw"]["1"]["gen"]) )
-end
+#     ## Extract the generators output
+#     gen_output[day] = Dict(idx =>[haskey(result["solution"]["nw"]["$i"]["gen"], idx) ? result["solution"]["nw"]["$i"]["gen"][idx]["pg"] : 0.0  for i in 1:24] for idx in keys(data["nw"]["1"]["gen"]) )
+# end
 
-# Calculate training time
-calculation_time = time() - start_time
-println("Solving time: $calculation_time seconds")
-
+## Step 3: Save the generation results for selected generators
+indices = [
+    "199", "200", "201", "202", "203", "204", "80", "81", "82", "188", "189", "190", "127", "128", "129", "130",
+    "205", "206", "207", "208", "98", "99", "100", "101", "102", "103", "151", "152", "153", "154", "155", "156", "126",
+    "158", "159", "9", "10", "11", "12", "25", "26", "27", "28", "29", "250", "251", "5", "6", "75", "76", "77", "78", "149", "150",
+    "146", "147", "148", "160", "161", "162", "224", "225", "226", "227", "228", "229", "218", "219", "220", "221", "222", "223",
+    "2", "3", "176", "177", "178", "191", "192", "193", "194", "196", "197", "198", "244", "245", "246", "247", "248", "249"
+]
 # Arrange the generation results 
 gens_data = Dict()
-timestamps = [DateTime(2021, month, day, hour, 0, 0) for hour in 0:23, day in 1:30]
+timestamps = [DateTime(2021, month, day, hour, 0, 0) for hour in 0:23, day in 1:31]
 timestamps = reshape(timestamps, 1, :)
 gens_data[Date] = timestamps
 for g in keys(data["nw"]["1"]["gen"])
     gens_pg = []
-    for day in 1:30
-        append!(gens_pg, gen_output[day][g])
+    for day in 1:31
+        # append!(gens_pg, gen_output[day][g])
+        append!(gens_pg, uc_results[day][g])
     end
     gens_data[g] = Dict("id"=> data["nw"]["1"]["gen"][g]["source_id"][2], "type" => data["nw"]["1"]["gen"][g]["type"], "bus"=> data["nw"]["1"]["bus"]["$(data["nw"]["1"]["gen"][g]["gen_bus"])"]["source_id"][2], "output" => gens_pg)
 end
 
-# save the final generation results to a JSON file
-open("results/generator_outputs_for_June_at_30_percent_EV_penetration.json","w") do f 
-    JSON.print(f, gens_data) 
-end
-
 # save the final generation results to a CSV file
 df = DataFrame(Date = vec(gens_data[Date]))
-for g in keys(gens_data)
+for g in indices
     if g!= Date
         df[!, g] = gens_data[g]["output"]
     end
 end
 
-CSV.write("results/generator_outputs_for_June_at_30_percent_EV_penetration.csv", df, header=true)
-
-filtered_gen = CSV.read("$file_path/filtered_gen.csv", DataFrame)
-count = 0
-for i in 1:length(filtered_gen[!, "plant_id"])
-    
-    for g in keys(data["nw"]["1"]["gen"])
-        if filtered_gen[i, "plant_id"] == data["nw"]["1"]["gen"][g]["plant_id"]
-            data["nw"]["1"]["gen"][g]["lat"] = filtered_gen[i, "lat"]
-            data["nw"]["1"]["gen"][g]["lon"] = filtered_gen[i, "lon"]
-            count = count+1
-        end
-    end
-    display(count)
-end
-for g in keys(data["nw"]["1"]["gen"])
-    if !haskey(data["nw"]["1"]["gen"][g], "lat")
-        data["nw"]["1"]["gen"][g]["lat"] = "NA"
-        data["nw"]["1"]["gen"][g]["lon"] = "NA"
-    end
-end
-generator_data = ["plant_id", "type", "county_name", "zone_id", "lat", "lon"]
-df = DataFrame()
-for g in keys(data["nw"]["1"]["gen"])
-    # if data["nw"]["1"]["gen"][g]["type"] == "coal" || data["nw"]["1"]["gen"][g]["type"] == "dfo" || data["nw"]["1"]["gen"][g]["type"] == "ng" || data["nw"]["1"]["gen"][g]["type"] == "hydro" || data["nw"]["1"]["gen"][g]["type"] == "nuclear" || data["nw"]["1"]["gen"][g]["type"] == "wind" || data["nw"]["1"]["gen"][g]["type"] == "solar"
-        df[!, g] = [data["nw"]["1"]["gen"][g][key] for key in generator_data]
-    # end
-end
-
-CSV.write("results/full_generator_data.csv", df, header = true)
-
+CSV.write("results/generator_outputs_for_selected_generators.csv", df, header=true)
