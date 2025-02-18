@@ -65,3 +65,17 @@ for row in eachrow(econs_data)
         push!(current_ev_share_per_county, ev_share)
     end
 end
+
+across_board = econs_data
+filter!(row -> (row.year == 2025) || (row.month == 1), across_board)
+filter!(row -> (row.year == 2033) || (row.month == 6), across_board)
+
+for  row in eachrow(across_board)
+    if row.year == 2025 && row.month == 1
+        row.ev_count = row.total_vehicles * 0.01
+        ev_share = row.ev_count/row.total_vehicles
+    elseif row.year == 2033 && row.month == 6
+        row.ev_count = row.total_vehicles * 0.3
+        ev_share = row.ev_count/row.total_vehicles
+    end
+end
