@@ -87,7 +87,7 @@ for day in 1:31 # loop through the days and solve multiperiod dcopf problems
     ug_prev_day, vg_prev_day, wg_prev_day = save_uc_results(data, day, gen_status)
 end
 
-## Step 2: Solve DCOPF problems for every day seperately
+## Step 2: Solve DCOPF problems for every day separately
 # gen_output = Dict()
 # for day in 1:31 # loop through the days and solve multiperiod dcopf problems
 
@@ -107,6 +107,29 @@ end
 #     ## Extract the generators output
 #     gen_output[day] = Dict(idx =>[haskey(result["solution"]["nw"]["$i"]["gen"], idx) ? result["solution"]["nw"]["$i"]["gen"][idx]["pg"] : 0.0  for i in 1:24] for idx in keys(data["nw"]["1"]["gen"]) )
 # end
+
+
+## Step 3: the Copperplate models
+## This is the DC model, but all the line limit constraints have been removed.
+gen_output = Dict()
+for day in 1:30 # loop through the days and solve multiperiod dcopf problems
+
+    println("day $day")
+    data = read_GA_data(file_path, month, day, hour, time_horizon)
+    
+    ## Relax the line limits
+    for nw in keys(data["nw"])
+        for (i, line) in data["nw"][nw]["branch"]
+            line["rate_a"] = line["rate_a"]*10e6
+        end
+    end
+    ## Solve OPF problem
+    result = solve_mp_opf_ramp(data, DCPPowerModel, opt; multinetwork=true)
+
+    ## Extract the generators output
+    gen_output[day] = Dict(idx =>[haskey(result["solution"]["nw"]["$i"]["gen"], idx) ? result["solution"]["nw"]["$i"]["gen"][idx]["pg"] : 0.0  for i in 1:24] for idx in keys(data["nw"]["1"]["gen"]) )
+end
+
 
 ## Step 3: Save the generation results for selected generators
 indices = [
