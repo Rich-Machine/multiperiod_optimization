@@ -149,13 +149,12 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
         end
 
         ## Adds all fields in the dictionary according to the link and spreadsheet.
-        # data["branch"]["$counter"] = Dict("source_id" => Any["branch", counter], "transformer" => is_transformer, "index" => counter, "f_bus" => x.from_bus_id, "t_bus" => x.to_bus_id, "br_r" => x.r, "br_x" => x.x, "br_status" => x.status, "rate_a" => x.rateA/100, "rate_b" => x.rateB/100, "rate_c" => x.rateC/100, "tap" => newRatio, "shift" => x.angle, "angmin" => -1.57, "angmax" => 1.57, "pf" => x.Pf/100, "qf" => x.Qf/100, "pt" => x.Pt/100, "qt" => x.Qt/100, "b_fr" => x.b/2, "b_to" => x.b/2, "g_fr" => 0.0, "g_to" => 0.0, "branch_device_type" => x.branch_device_type, "from_zone_id" => newZone1, "to_zone_id" => newZone2, "from_county_id" => x.from_county_id, "from_county_name" => x.from_county_name, "to_county_id" => x.to_county_id, "to_county_name" => x.to_county_name)
-        data["branch"]["$counter"] = Dict("source_id" => Any["branch", counter], "transformer" => is_transformer, "index" => counter, "f_bus" => x.from_bus_id, "t_bus" => x.to_bus_id, "br_r" => x.r, "br_x" => x.x, "br_status" => x.status, "rate_a" => x.rateA/100 * 1.01, "rate_b" => x.rateB/100 *1.01, "rate_c" => x.rateC/100 * 1.01, "tap" => newRatio, "shift" => x.angle, "angmin" => -1.57, "angmax" => 1.57, "pf" => x.Pf/100, "qf" => x.Qf/100, "pt" => x.Pt/100, "qt" => x.Qt/100, "b_fr" => x.b/2, "b_to" => x.b/2, "g_fr" => 0.0, "g_to" => 0.0, "branch_device_type" => x.branch_device_type, "from_zone_id" => newZone1, "to_zone_id" => newZone2, "from_county_id" => x.from_county_id, "from_county_name" => x.from_county_name, "to_county_id" => x.to_county_id, "to_county_name" => x.to_county_name)
+        data["branch"]["$counter"] = Dict("source_id" => Any["branch", counter], "transformer" => is_transformer, "index" => counter, "f_bus" => x.from_bus_id, "t_bus" => x.to_bus_id, "br_r" => x.r, "br_x" => x.x, "br_status" => x.status, "rate_a" => x.rateA/100, "rate_b" => x.rateB/100, "rate_c" => x.rateC/100, "tap" => newRatio, "shift" => x.angle, "angmin" => -1.57, "angmax" => 1.57, "pf" => x.Pf/100, "qf" => x.Qf/100, "pt" => x.Pt/100, "qt" => x.Qt/100, "b_fr" => x.b/2, "b_to" => x.b/2, "g_fr" => 0.0, "g_to" => 0.0, "branch_device_type" => x.branch_device_type, "from_zone_id" => newZone1, "to_zone_id" => newZone2, "from_county_id" => x.from_county_id, "from_county_name" => x.from_county_name, "to_county_id" => x.to_county_id, "to_county_name" => x.to_county_name)
 
         if "$counter" in keys(branch_violation)
-            data["branch"]["$counter"]["rate_a"] = ceil((data["branch"]["$counter"]["rate_a"] + branch_violation["$counter"]) *1.2)
-            data["branch"]["$counter"]["rate_b"] = ceil((data["branch"]["$counter"]["rate_b"] + branch_violation["$counter"]) *1.2)
-            data["branch"]["$counter"]["rate_c"] = ceil((data["branch"]["$counter"]["rate_c"] + branch_violation["$counter"]) *1.2)
+            data["branch"]["$counter"]["rate_a"] = ceil((data["branch"]["$counter"]["rate_a"] + branch_violation["$counter"]) * 1.2)
+            data["branch"]["$counter"]["rate_b"] = ceil((data["branch"]["$counter"]["rate_b"] + branch_violation["$counter"]) * 1.2)
+            data["branch"]["$counter"]["rate_c"] = ceil((data["branch"]["$counter"]["rate_c"] + branch_violation["$counter"]) * 1.2)
         end
         global counter += 1
 
@@ -339,32 +338,11 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
     flag = false
     pastHour = 0
 
-    # display("Reading EV data")
-    # nrel_data = CSV.read("$file_path/aggregatedCounties.csv", DataFrame)
+    ## Change the file path to the EV data - either uniform or endogenous.
+    # econs_data = CSV.read("$file_path/uniform.csv", DataFrame)
+    econs_data = CSV.read("$file_path/endogenous.csv", DataFrame)
 
-    # counties = ["Appling", "Atkinson", "Bacon", "Baker", "Baldwin", "Banks", "Barrow", "Bartow", "Ben Hill", "Berrien", "Bibb", "Bleckley", "Brantley", "Brooks", "Bryan", "Bulloch", "Burke", "Butts", "Calhoun", "Camden", "Candler", "Carroll", "Catoosa", "Charlton", "Chatham", "Chattahoochee", "Chattooga", "Cherokee", "Clarke", "Clay", "Clayton", "Clinch", "Cobb", "Coffee", "Colquitt", "Columbia", "Cook", "Coweta", "Crawford", "Crisp", "Dade", "Dawson", "De Kalb", "Decatur", "Dodge", "Dooly", "Dougherty", "Douglas", "Early", "Echols", "Effingham", "Elbert", "Emanuel", "Evans", "Fannin", "Fayette", "Floyd", "Forsyth", "Franklin", "Fulton", "Gilmer", "Glascock", "Glynn", "Gordon", "Grady", "Greene", "Gwinnett", "Habersham", "Hall", "Hancock", "Haralson", "Harris", "Hart", "Heard", "Henry", "Houston", "Irwin", "Jackson", "Jasper", "Jeff Davis", "Jefferson", "Jenkins", "Johnson", "Jones", "Lamar", "Lanier", "Laurens", "Lee", "Liberty", "Lincoln", "Long", "Lowndes", "Lumpkin", "Mcduffie", "Mcintosh", "Macon", "Madison", "Marion", "Meriwether", "Miller", "Mitchell", "Monroe", "Montgomery", "Morgan", "Murray", "Muscogee", "Newton", "Oconee", "Oglethorpe", "Paulding", "Peach", "Pickens", "Pierce", "Pike", "Polk", "Pulaski", "Putnam", "Quitman", "Rabun", "Randolph", "Richmond", "Rockdale", "Schley", "Screven", "Seminole", "Spalding", "Stephens", "Stewart", "Sumter", "Talbot", "Taliaferro", "Tattnall", "Taylor", "Telfair", "Terrell", "Thomas", "Tift", "Toombs", "Towns", "Treutlen", "Troup", "Turner", "Twiggs", "Union", "Upson", "Walker", "Walton", "Ware", "Warren", "Washington", "Wayne", "Webster", "Wheeler", "White", "Whitfield", "Wilcox", "Wilkes", "Wilkinson", "Worth"]
-    # points = []
-    # important_points = Dict()
-    # for hour in 0:23
-    #     important_points[hour] = Dict()
-    #     for county in counties
-    #         points = []
-    #         important_points[hour][county] = Dict()
-    #         for x in eachrow(nrel_data)
-    #             for i in 0:6
-    #                 if x.geography == county && x.day_of_week == i && x.month == 1 && x.hour == hour # assume the shape for the different months are the same
-    #                     push!(points, x.Load)
-    #                     if i == 6
-    #                         important_points[hour][county] = points./maximum(points)   
-    #                     end               
-    #                 end
-    #             end
-    #         end
-    #     end
-    # end
 
-    ## Gets the demand so that pd and qd can be set accurately
-    econs_data = CSV.read("$file_path/econs_data.csv", DataFrame)
     for row in eachrow(econs_data)
         row.countyname = uppercase(string(row.countyname[1])) * lowercase(row.countyname[2:end])
     end
@@ -401,6 +379,7 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
             ## Logic to set the new pd and qd for each entry in the hour.
             hourData = data["nw"][string(counter)]["load"]
             for g in keys(hourData)
+
                 if data["nw"][string(counter)]["bus"][g]["zone_id"] == 1
                     newPd = hourData[g]["percentage"] * newPd19
                 elseif data["nw"][string(counter)]["bus"][g]["zone_id"] == 2
@@ -416,15 +395,21 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
                     ## Set qd
                     hourData[g]["qd"] = sqrt((newPd / hourData[g]["pf"])^2 - newPd^2)
                 end
-    
+                
                 ## set pd
                 if data["nw"][string(counter)]["bus"][g]["county_name"] != "NA"
                     for rows in eachrow(econs_data)
-                        if rows.month == month && data["nw"][string(counter)]["bus"][g]["county_name"] == rows.countyname && rows.year == future_year
-                            multiplying_factor = rows.ev_count * 5 * 0.000000000001  ## Used 5 as the average EV load is 5kW (multiplied by 0.001 to get MW)
-                            newPd = newPd + important_points[counter-1][data["nw"][string(counter)]["bus"][g]["county_name"]][day%7 + 1] * hourData[g]["percentage_county"] * multiplying_factor
+                        if rows.month == month && data["nw"][string(counter)]["bus"][g]["county_name"] == rows.countyname && rows.year == future_year ##&& get(countyLoadDict, data["nw"][string(counter)]["bus"][g]["county_name"], 0) != 0
+                            # multiplying_factor = rows.ev_count * (96.11/weekly_total[rows.countyname]) * 10e-5 ## 
+                            # newPd = newPd + ev_demand[counter-1][data["nw"][string(counter)]["bus"][g]["county_name"]][day%7 + 1] * hourData[g]["percentage_county"] * multiplying_factor
+
+                            ### This is probably our best bet yet. 
+                            ### Since the total number of vehicles is 3,081,420.4837006996, we can use this to scale the demand and multiply by 288288 to get the total demand in MW.
+                            ## 288288 is the total EV demand from 30% of 1.6 million cars. 10e-5 is to convert to base of 100MW.
+                            newPd = newPd + ev_demand[counter-1][data["nw"][string(counter)]["bus"][g]["county_name"]][day%7 + 1] * hourData[g]["percentage_county"] * (rows.ev_count/3.0814204837006996e6) * 288288 * 10e-5 ## Multiply by 10e-5to convert to base of 100MW.
+
                         end
-                    end
+                    end                    
                 end
                 hourData[g]["pd"] = newPd
             end
@@ -447,6 +432,5 @@ function read_GA_data(file_path, month, day, hour, time_horizon)
             end
         end
     end
-
     return data
 end
